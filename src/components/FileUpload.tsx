@@ -77,6 +77,7 @@ export default function FileUpload({ onSuccess }: FileUploadProps) {
             <span className="text-sm font-medium">{file.name}</span>
             <button
               type="button"
+              aria-label="Remove selected file"
               onClick={(e) => { e.stopPropagation(); setFile(null); if (inputRef.current) inputRef.current.value = '' }}
               className="ml-1 text-slate-500 hover:text-slate-300"
             >
@@ -89,10 +90,13 @@ export default function FileUpload({ onSuccess }: FileUploadProps) {
             <p className="text-xs text-slate-500">PDF, DOCX, or PPTX — max 20 MB</p>
           </>
         )}
+        <label htmlFor="file-upload-input" className="sr-only">Choose file to upload</label>
         <input
           ref={inputRef}
+          id="file-upload-input"
           type="file"
           accept=".pdf,.docx,.pptx,.txt"
+          aria-label="Choose file to upload"
           onChange={handleFileChange}
           className="hidden"
         />

@@ -132,7 +132,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <dl className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {usageItems.map(({ label, value, icon: Icon }) => (
                     <div key={label} className="rounded-3xl bg-slate-900/80 p-4">
                       <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function DashboardPage() {
                       <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
                     </div>
                   ))}
-                </dl>
+                </div>
               )}
             </Card>
           </div>
