@@ -1,4 +1,4 @@
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
 import LoginForm from '../ui/LoginForm';
 import SignupForm from '../ui/SignupForm';
 
@@ -25,6 +25,7 @@ export default function AuthPage() {
             <Routes>
               <Route path="login" element={<LoginForm />} />
               <Route path="signup" element={<SignupForm />} />
+              <Route path="*" element={<Navigate to="login" replace />} />
             </Routes>
           </div>
         </div>

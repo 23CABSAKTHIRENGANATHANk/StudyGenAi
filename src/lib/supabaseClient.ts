@@ -2,7 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const meta: any = import.meta;
 const supabaseUrl = meta.env?.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabaseAnonKey = (meta.env?.VITE_SUPABASE_ANON_KEY as string | undefined) ||
+  (meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined);
 
 const missingEnv = !supabaseUrl || !supabaseAnonKey;
 
