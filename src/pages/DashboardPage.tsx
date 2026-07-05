@@ -54,11 +54,11 @@ export default function DashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await apiJson('/api/dashboard/overview');
+        const res = await apiJson<DashboardData>('/api/dashboard/overview');
         if (!res.ok) {
           setError('Failed to load dashboard data.');
         } else {
-          setData(res.json as DashboardData);
+          setData(res.data);
         }
       } catch {
         setError('Network error loading dashboard.');
@@ -110,8 +110,8 @@ export default function DashboardPage() {
                 {[
                   { label: 'Upload document', to: '/app/documents' },
                   { label: 'Generate summary', to: '/app/documents' },
-                  { label: 'Create quiz', to: '/app/documents' },
-                  { label: 'Chat with notes', to: '/app/documents' },
+                  { label: 'Create quiz', to: '/app/quizzes' },
+                  { label: 'Chat with notes', to: '/app/chat' },
                 ].map(({ label, to }) => (
                   <Link
                     key={label}

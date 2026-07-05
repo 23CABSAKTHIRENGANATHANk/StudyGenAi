@@ -1,28 +1,51 @@
-type ApiOptions = RequestInit & { auth?: boolean }
+import type { ApiResponse } from '../types';
 
-export async function apiFetch(input: string, init: ApiOptions = {}) {
-  const opts: RequestInit = { ...init }
-  // attach Authorization header if requested
+const meta: Record<string, unknown> = import.meta as unknown as Record<string, unknown>;
+const API_BASE: string = (meta.env as Record<string, string> | undefined)?.VITE_API_URL ?? '';
+
+type ApiOptions = RequestInit & { auth?: boolean };
+
+export async function apiFetch(input: string, init: ApiOptions = {}): Promise<Response> {
+  const { auth: _auth, ...rest } = init;
+  const opts: RequestInit = { ...rest };
+
+  // Attach Authorization header from localStorage token
   if (init.auth !== false) {
-    const token = localStorage.getItem('access_token')
+    const token = localStorage.getItem('access_token');
     if (token) {
-      opts.headers = { ...(opts.headers as any), Authorization: `Bearer ${token}` }
+      opts.headers = {
+        ...(opts.headers as Record<string, string> | undefined),
+        Authorization: `Bearer ${token}`,
+      };
     }
   }
-  // default credentials: include when not explicitly set to omit
-  if (opts.credentials === undefined) opts.credentials = 'include'
-  const res = await fetch(input, opts)
-  return res
+
+  // Always include cookies for HttpOnly refresh token support
+  if (opts.credentials === undefined) opts.credentials = 'include';
+
+  const url = input.startsWith('http') ? input : `${API_BASE}${input}`;
+  return fetch(url, opts);
 }
 
-export async function apiJson(input: string, init: ApiOptions = {}) {
-  const res = await apiFetch(input, { ...init, headers: { 'Content-Type': 'application/json', ...(init.headers || {}) } })
-  const text = await res.text()
+/**
+ * Convenience wrapper that sets Content-Type: application/json
+ * and parses the response body as JSON.
+ * Do NOT use this for FormData/multipart — use apiFetch directly.
+ */
+export async function apiJson<T = unknown>(input: string, init: ApiOptions = {}): Promise<ApiResponse<T>> {
+  const res = await apiFetch(input, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init.headers as Record<string, string> | undefined),
+    },
+  });
+  const text = await res.text();
   try {
-    return { ok: res.ok, status: res.status, json: text ? JSON.parse(text) : null }
-  } catch (e) {
-    return { ok: res.ok, status: res.status, json: null }
+    return { ok: res.ok, status: res.status, data: text ? (JSON.parse(text) as T) : null };
+  } catch {
+    return { ok: res.ok, status: res.status, data: null };
   }
 }
 
-export default apiFetch
+export default apiFetch;

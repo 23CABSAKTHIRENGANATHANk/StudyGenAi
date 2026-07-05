@@ -28,8 +28,8 @@ export default function LoginForm() {
       if (access) {
         localStorage.setItem('access_token', access);
         // Kick off background token refresh
-        ;(window as any).__studygen_refresh_interval && clearInterval((window as any).__studygen_refresh_interval);
-        ;(window as any).__studygen_refresh_interval = setInterval(() => {
+        if (window.__studygen_refresh_interval) clearInterval(window.__studygen_refresh_interval as number);
+        window.__studygen_refresh_interval = setInterval(() => {
           fetch('/api/auth/refresh', {
             method: 'POST',
             credentials: 'include',

@@ -1,6 +1,5 @@
 import { NavLink, Route, Routes, Navigate } from 'react-router-dom';
-import LoginForm from '../ui/LoginForm';
-import SignupForm from '../ui/SignupForm';
+import { LoginForm, SignupForm } from '../ui';
 
 export default function AuthPage() {
   return (

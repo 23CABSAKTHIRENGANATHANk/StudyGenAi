@@ -1,12 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
-
-interface AuthContextType {
-  session: any;
-  user: any;
-  loading: boolean;
-  signOut: () => Promise<void>;
-}
+import type { User, AuthContextType } from '../types'
 
 const AuthContext = createContext<AuthContextType>({
   session: null,
@@ -20,8 +14,8 @@ export function useAuth() {
 }
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<any>(null)
-  const [user, setUser] = useState<any>(null)
+  const [session, setSession] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,9 +29,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           body: JSON.stringify({}),
         })
         if (res.ok) {
-          const j = await res.json()
-          const access = j?.result?.access_token || j?.access_token
-          const userData = j?.result?.user || j?.user
+          const j = await res.json() as Record<string, unknown>
+          const result = j?.result as Record<string, unknown> | undefined
+          const access = (result?.access_token as string | undefined) || (j?.access_token as string | undefined)
+          const userData = (result?.user as User | undefined) || (j?.user as User | undefined)
           if (access) {
             localStorage.setItem('access_token', access)
             // Rotate refresh every 14 minutes
@@ -48,24 +43,27 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         } else {
           // Fall back to Supabase client SDK session (e.g. OAuth flows)
           const { data } = await supabase.auth.getSession()
-          setSession(data.session)
-          setUser(data.session?.user ?? null)
+          const supaUser = data.session?.user as unknown as User | undefined
+          setSession(supaUser || null)
+          setUser(supaUser || null)
         }
       } catch {
         const { data } = await supabase.auth.getSession()
-        setSession(data.session)
-        setUser(data.session?.user ?? null)
+        const supaUser = data.session?.user as unknown as User | undefined
+        setSession(supaUser || null)
+        setUser(supaUser || null)
       } finally {
         setLoading(false)
       }
     })()
 
     // Keep in sync with Supabase client-side auth state changes (OAuth, magic links)
-    const { data } = supabase.auth.onAuthStateChange((_event: string, newSession: any) => {
-      setSession(newSession)
-      setUser(newSession?.user ?? null)
+    const { data } = supabase.auth.onAuthStateChange((_event: string, newSession: { user?: User | null } | null) => {
+      const supaUser = newSession?.user as unknown as User | undefined
+      setSession(supaUser || null)
+      setUser(supaUser || null)
     })
-    const subscription = (data as any)?.subscription ?? data
+    const subscription = data?.subscription
     return () => {
       try { subscription?.unsubscribe?.() } catch { /* ignore */ }
       _stopRefreshInterval()
@@ -99,14 +97,15 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
 function _startRefreshInterval() {
   _stopRefreshInterval()
-  ;(window as any).__studygen_refresh_interval = setInterval(() => {
+  window.__studygen_refresh_interval = setInterval(() => {
     fetch('/api/auth/refresh', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
-    }).then(r => r.ok && r.json()).then(j => {
-      const access = j?.result?.access_token || j?.access_token
+    }).then(r => r.ok && r.json()).then((j: unknown) => {
+      const result = (j as Record<string, unknown>)?.result as Record<string, unknown> | undefined
+      const access = (result?.access_token as string | undefined) || ((j as Record<string, unknown>)?.access_token as string | undefined)
       if (access) localStorage.setItem('access_token', access)
     }).catch(() => {})
   }, 14 * 60 * 1000) as unknown as number
@@ -114,8 +113,8 @@ function _startRefreshInterval() {
 
 function _stopRefreshInterval() {
   try {
-    const id = (window as any).__studygen_refresh_interval
+    const id = window.__studygen_refresh_interval
     if (id) clearInterval(id)
-    delete (window as any).__studygen_refresh_interval
+    delete window.__studygen_refresh_interval
   } catch { /* ignore */ }
 }
