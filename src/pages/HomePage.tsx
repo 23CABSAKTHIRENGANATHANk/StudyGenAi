@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Layers, Sparkles, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Layers, Sparkles, ShieldCheck, BrainCircuit, FileText } from 'lucide-react';
 
 export default function HomePage() {
   return (
@@ -8,7 +8,7 @@ export default function HomePage() {
         <header className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full bg-violet-500/10 px-4 py-2 text-sm text-violet-200 ring-1 ring-violet-500/20">
-              <Sparkles className="h-4 w-4" />
+              <BrainCircuit className="h-4 w-4" />
               AI-powered study companion for students
             </div>
             <h1 className="text-5xl font-semibold tracking-tight text-white sm:text-6xl">Study smarter with AI-driven summaries, flashcards, quizzes, and document chat.</h1>
@@ -24,10 +24,11 @@ export default function HomePage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                to="/app"
+                to="/app/documents"
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/20"
               >
-                View Dashboard
+                <FileText className="h-4 w-4" />
+                Open Documents
               </Link>
             </div>
           </div>
