@@ -16,12 +16,10 @@ jobs:
         with:
           node-version: '18'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install frontend deps
-        working-directory: frontend
         run: npm ci
       - name: Type-check frontend
-        working-directory: frontend
         run: npm run check
 
   backend-tests:
@@ -55,12 +53,10 @@ jobs:
         with:
           node-version: '18'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install frontend deps
-        working-directory: frontend
         run: npm ci
       - name: Build frontend
-        working-directory: frontend
         run: npm run build
 
   e2e:
@@ -73,13 +69,10 @@ jobs:
         with:
           node-version: '18'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: package-lock.json
       - name: Install frontend deps
-        working-directory: frontend
         run: |
           npm ci
           npx playwright install --with-deps
       - name: Run Playwright tests
-        working-directory: frontend
-        run: |
-          npm run test:e2e
+        run: npm run test:e2e

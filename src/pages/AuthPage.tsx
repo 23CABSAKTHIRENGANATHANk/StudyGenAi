@@ -12,10 +12,10 @@ export default function AuthPage() {
               <h1 className="mt-4 text-3xl font-semibold text-white">Sign in to continue learning faster.</h1>
             </div>
             <nav className="space-y-3">
-              <NavLink to="login" className={({ isActive }) => `block rounded-3xl px-5 py-3 text-sm transition ${isActive ? 'bg-violet-500/10 text-white' : 'text-slate-300 hover:bg-slate-900/70'}`}>
+              <NavLink to="/auth/login" className={({ isActive }) => `block rounded-3xl px-5 py-3 text-sm transition ${isActive ? 'bg-violet-500/10 text-white' : 'text-slate-300 hover:bg-slate-900/70'}`}>
                 Login
               </NavLink>
-              <NavLink to="signup" className={({ isActive }) => `block rounded-3xl px-5 py-3 text-sm transition ${isActive ? 'bg-violet-500/10 text-white' : 'text-slate-300 hover:bg-slate-900/70'}`}>
+              <NavLink to="/auth/signup" className={({ isActive }) => `block rounded-3xl px-5 py-3 text-sm transition ${isActive ? 'bg-violet-500/10 text-white' : 'text-slate-300 hover:bg-slate-900/70'}`}>
                 Sign up
               </NavLink>
             </nav>

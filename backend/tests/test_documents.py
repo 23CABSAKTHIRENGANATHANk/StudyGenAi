@@ -1,16 +1,18 @@
 import os
 import io
-import json
 from fastapi.testclient import TestClient
-import requests
 
 os.environ.setdefault('SUPABASE_URL', 'https://example.supabase.co')
 os.environ.setdefault('SUPABASE_SERVICE_KEY', 'service-role-key')
 
 from app.main import app
-from app.services import supabase_service, ai_service
+from app.routes import documents
 
 client = TestClient(app)
+
+
+def override_current_user() -> dict:
+    return {'id': 'user_1'}
 
 
 class DummyConn:
@@ -40,9 +42,8 @@ def test_upload_rejects_large_file(monkeypatch):
     # small file over 1KB
     data = b'a' * 1500
     files = {'file': ('notes.txt', io.BytesIO(data), 'text/plain')}
-    # bypass auth by overriding dependency
     app.dependency_overrides.clear()
-    app.dependency_overrides['app.deps.get_current_user'] = lambda: {'id': 'user_1'}
+    app.dependency_overrides[documents.get_current_user] = override_current_user
     resp = client.post('/api/documents/upload', files=files)
     assert resp.status_code == 400
 
@@ -51,7 +52,7 @@ def test_upload_rejects_bad_ext(monkeypatch):
     data = b'hello'
     files = {'file': ('malware.exe', io.BytesIO(data), 'application/octet-stream')}
     app.dependency_overrides.clear()
-    app.dependency_overrides['app.deps.get_current_user'] = lambda: {'id': 'user_1'}
+    app.dependency_overrides[documents.get_current_user] = override_current_user
     resp = client.post('/api/documents/upload', files=files)
     assert resp.status_code == 400
 
@@ -61,12 +62,12 @@ def test_upload_accepts_and_processes(monkeypatch):
     files = {'file': ('notes.txt', io.BytesIO(data), 'text/plain')}
 
     # Monkeypatch external services: storage and AI and DB connection
-    monkeypatch.setattr(supabase_service, 'upload_file', lambda bucket, path, content, content_type=None: {'path': path})
-    monkeypatch.setattr(ai_service, 'generate_embedding', lambda text: [0.1, 0.2, 0.3])
-    monkeypatch.setattr('app.routes.documents.get_connection', lambda: DummyConn())
+    monkeypatch.setattr(documents.supabase_service, 'upload_file', lambda bucket, path, content, content_type=None: {'path': path})
+    monkeypatch.setattr(documents.ai_service, 'generate_embedding', lambda text: [0.1, 0.2, 0.3])
+    monkeypatch.setattr(documents, 'get_connection', lambda: DummyConn())
 
     app.dependency_overrides.clear()
-    app.dependency_overrides['app.deps.get_current_user'] = lambda: {'id': 'user_1'}
+    app.dependency_overrides[documents.get_current_user] = override_current_user
 
     resp = client.post('/api/documents/upload', files=files)
     assert resp.status_code in (200, 201)

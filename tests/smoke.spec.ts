@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/auth/refresh', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: '{}' }),
+  );
+});
+
 test('homepage loads and navigation works', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText(/Study smarter/i)).toBeVisible();
@@ -11,6 +17,7 @@ test('homepage loads and navigation works', async ({ page }) => {
 
 test('auth page renders login and signup tabs', async ({ page }) => {
   await page.goto('/auth/login');
-  await expect(page.getByRole('link', { name: /login/i })).toBeVisible();
-  await expect(page.getByRole('link', { name: /sign up/i })).toBeVisible();
+  const navigation = page.getByRole('navigation');
+  await expect(navigation.getByRole('link', { name: 'Login', exact: true })).toBeVisible();
+  await expect(navigation.getByRole('link', { name: 'Sign up', exact: true })).toBeVisible();
 });
