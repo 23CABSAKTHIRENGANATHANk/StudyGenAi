@@ -37,14 +37,14 @@ jobs:
           . .venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
+          python -m pip install pytest
       - name: Run backend tests
         working-directory: backend
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          . ../.venv/bin/activate
-          pytest -q
+          ../.venv/bin/python -m pytest -q
 
   frontend-build:
     runs-on: ubuntu-latest
