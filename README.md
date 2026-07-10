@@ -164,4 +164,3 @@ npm run build
 Notes
 - The project expects the backend to be running at `http://localhost:8000` for API calls.
 - If uploads fail with "Bucket not found", the backend will attempt to create the bucket automatically when using the service key.
->>>>>>> 8b86d2479cbfda77f688adb047c1be3dd12c5e0e
