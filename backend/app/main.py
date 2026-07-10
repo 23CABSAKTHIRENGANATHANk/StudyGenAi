@@ -1,0 +1,67 @@
+import logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from .routes import auth, documents, ai, profile, dashboard, notes, flashcards, quizzes, study_plans, notifications
+from .core.config import settings
+from .middleware.logging import RequestIDMiddleware
+from .middleware.rate_limit import general_limiter
+import os
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+    SENTRY_DSN = os.getenv('SENTRY_DSN') or None
+    if SENTRY_DSN:
+        sentry_sdk.init(dsn=SENTRY_DSN)
+except Exception:
+    SENTRY_DSN = None
+
+# ── Logging setup ────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# ── App ───────────────────────────────────────────────────────────────────────
+app = FastAPI(
+    title="StudyGen AI Backend",
+    description="API backend for StudyGen AI learning assistant",
+    version="0.1.0",
+)
+
+# Middleware
+app.add_middleware(RequestIDMiddleware)
+
+# CORS
+origins = ["*"] if settings.dev_cors_all else [settings.app_origin]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
+app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
+app.include_router(notes.router, prefix="/api/notes", tags=["notes"])
+app.include_router(flashcards.router, prefix="/api/flashcards", tags=["flashcards"])
+app.include_router(quizzes.router, prefix="/api/quizzes", tags=["quizzes"])
+app.include_router(study_plans.router, prefix="/api/study-plans", tags=["study-plans"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["notifications"])
+
+
+# ── Health check ──────────────────────────────────────────────────────────────
+@app.get("/", tags=["health"])
+async def health_check():
+    """Simple health probe for load-balancers and uptime monitors."""
+    return {"status": "ok", "service": "StudyGen AI Backend", "version": "0.1.0"}
+
+
+# Wrap app in Sentry middleware if configured
+if 'sentry_sdk' in globals() and SENTRY_DSN:
+    app.add_middleware(SentryAsgiMiddleware)
