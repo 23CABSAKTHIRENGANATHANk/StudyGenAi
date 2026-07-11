@@ -1,0 +1,26 @@
+name: Push DB Schema
+
+on:
+  workflow_dispatch:
+
+jobs:
+  push-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install supabase CLI via npm
+        run: npm ci --prefix .
+      - name: Push schema to Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          npx supabase db push --schema database/schema.sql
+      - name: Ensure documents bucket exists
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          npx supabase storage create-bucket documents --public=false || true
