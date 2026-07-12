@@ -5,26 +5,47 @@ os.environ.setdefault('SUPABASE_SERVICE_KEY', 'service-role-key')
 import json
 from fastapi.testclient import TestClient
 from app.main import app
-import requests
+from app.services.supabase_service import supabase_service
 
 client = TestClient(app)
 
-class DummyResponse:
-    def __init__(self, data, status_code=200):
-        self._data = data
-        self.status_code = status_code
-    def json(self):
-        return self._data
-    def raise_for_status(self):
-        if not (200 <= self.status_code < 300):
-            raise requests.HTTPError(f"Status {self.status_code}")
+class DummyUser:
+    def __init__(self, uid, email):
+        self.id = uid
+        self.email = email
+
+class DummySession:
+    def __init__(self, access_token, refresh_token):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+
+class DummyAuthResponse:
+    def __init__(self, session, user):
+        self.session = session
+        self.user = user
+
+class DummyAuthClient:
+    def sign_in_with_password(self, credentials):
+        session = DummySession('atk123', 'rtk456')
+        user = DummyUser('user_1', credentials.get('email'))
+        return DummyAuthResponse(session, user)
+
+    def sign_up(self, credentials):
+        user = DummyUser('user_1', credentials.get('email'))
+        return DummyAuthResponse(None, user)
+
+    def refresh_session(self, token):
+        session = DummySession('new_atk', 'new_rtk')
+        user = DummyUser('user_1', 'a@b.com')
+        return DummyAuthResponse(session, user)
+
+class DummyClient:
+    def __init__(self):
+        self.auth = DummyAuthClient()
 
 
 def test_server_login_sets_cookie(monkeypatch):
-    dummy = {'access_token': 'atk123', 'refresh_token': 'rtk456', 'user': {'id': 'user_1'}}
-    def fake_post(url, json=None, headers=None, timeout=10):
-        return DummyResponse(dummy, 200)
-    monkeypatch.setattr(requests, 'post', fake_post)
+    monkeypatch.setattr(supabase_service, 'client', DummyClient())
 
     resp = client.post('/api/auth/server-login', json={'email': 'a@b.com', 'password': 'pass'})
     assert resp.status_code == 200
@@ -36,10 +57,7 @@ def test_server_login_sets_cookie(monkeypatch):
 
 
 def test_refresh_returns_new_token(monkeypatch):
-    dummy = {'access_token': 'new_atk', 'refresh_token': 'new_rtk'}
-    def fake_post(url, json=None, headers=None, timeout=10):
-        return DummyResponse(dummy, 200)
-    monkeypatch.setattr(requests, 'post', fake_post)
+    monkeypatch.setattr(supabase_service, 'client', DummyClient())
 
     resp = client.post('/api/auth/refresh', json={'refresh_token': 'old'})
     assert resp.status_code == 200
