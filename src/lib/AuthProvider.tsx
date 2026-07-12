@@ -29,26 +29,29 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       try {
         if (hasBackend()) {
           const refreshToken = localStorage.getItem('refresh_token')
-          // Attempt to restore session via local refresh token
-          const res = await fetch(apiUrl('/api/auth/refresh'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refresh_token: refreshToken || undefined }),
-          })
-          if (res.ok) {
-            const j = await res.json() as Record<string, unknown>
-            const result = j?.result as Record<string, unknown> | undefined
-            const access = (result?.access_token as string | undefined) || (j?.access_token as string | undefined)
-            const refresh = (result?.refresh_token as string | undefined) || (j?.refresh_token as string | undefined)
-            const userData = (result?.user as User | undefined) || (j?.user as User | undefined)
-            if (access) {
-              localStorage.setItem('access_token', access)
-              if (refresh) localStorage.setItem('refresh_token', refresh)
-              _startRefreshInterval()
+          if (refreshToken) {
+            // Attempt to restore session via local refresh token
+            const res = await fetch(apiUrl('/api/auth/refresh'), {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refresh_token: refreshToken }),
+            })
+            if (res.ok) {
+              const j = await res.json() as Record<string, unknown>
+              const result = j?.result as Record<string, unknown> | undefined
+              const access = (result?.access_token as string | undefined) || (j?.access_token as string | undefined)
+              const refresh = (result?.refresh_token as string | undefined) || (j?.refresh_token as string | undefined)
+              const userData = (result?.user as User | undefined) || (j?.user as User | undefined)
+              if (access) {
+                localStorage.setItem('access_token', access)
+                if (refresh) localStorage.setItem('refresh_token', refresh)
+                _startRefreshInterval()
+              }
+              setSession(userData || null)
+              setUser(userData || null)
+              return
             }
-            setSession(userData || null)
-            setUser(userData || null)
           }
         }
         // Fall back to Supabase client SDK session (OAuth flows / magic links)

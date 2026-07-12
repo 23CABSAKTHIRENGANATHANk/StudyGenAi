@@ -58,7 +58,11 @@ export default function LoginForm() {
           return;
         }
       }
-      navigate('/app');
+      if (hasBackend()) {
+        window.location.href = '/app';
+      } else {
+        navigate('/app');
+      }
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
