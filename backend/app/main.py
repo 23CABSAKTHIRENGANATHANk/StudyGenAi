@@ -63,6 +63,18 @@ async def health_check():
     return {"status": "ok", "service": "StudyGen AI Backend", "version": "0.1.0"}
 
 
+@app.get("/api/debug-db", tags=["health"])
+async def debug_db():
+    import traceback
+    try:
+        from .db import get_connection
+        conn = get_connection()
+        conn.close()
+        return {"status": "success", "message": "Database connected successfully!"}
+    except Exception as e:
+        return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
+
+
 # Wrap app in Sentry middleware if configured
 if 'sentry_sdk' in globals() and SENTRY_DSN:
     app.add_middleware(SentryAsgiMiddleware)
