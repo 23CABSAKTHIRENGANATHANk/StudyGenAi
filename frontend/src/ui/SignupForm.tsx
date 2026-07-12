@@ -4,8 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { apiUrl } from '../lib/api';
 
 function hasBackend(): boolean {
-  const meta: any = import.meta;
-  return ((meta.env?.VITE_API_URL as string | undefined) ?? '').trim() !== '';
+  return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim() !== '';
 }
 
 export default function SignupForm() {

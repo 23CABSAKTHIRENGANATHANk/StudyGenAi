@@ -16,9 +16,7 @@ export function useAuth() {
 
 /** Whether a deployed backend API URL is configured */
 function hasBackend(): boolean {
-  const meta: any = import.meta
-  const apiBase = (meta.env?.VITE_API_URL as string | undefined) ?? ''
-  return apiBase.trim() !== ''
+  return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim() !== ''
 }
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {

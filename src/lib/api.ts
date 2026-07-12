@@ -1,7 +1,7 @@
 import type { ApiResponse } from '../types';
 
-const meta: Record<string, unknown> = import.meta as unknown as Record<string, unknown>;
-const API_BASE = ((meta.env as Record<string, string> | undefined)?.VITE_API_URL ?? '').replace(/\/$/, '');
+// MUST use import.meta.env.VITE_* directly for Vite's static build-time replacement
+const API_BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
 
 /** Build an API URL for both local proxy and separately deployed backends. */
 export function apiUrl(path: string): string {
