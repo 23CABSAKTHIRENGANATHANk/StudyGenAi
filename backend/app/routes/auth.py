@@ -125,7 +125,7 @@ async def server_login(data: AuthRequest, response: Response):
                 max_age=60 * 60 * 24 * 30,
                 path='/'
             )
-        return {'access_token': access_token, 'user': user_data}
+        return {'access_token': access_token, 'refresh_token': refresh_token, 'user': user_data}
     except requests.HTTPError:
         logger.exception('server-login HTTPError')
         try:

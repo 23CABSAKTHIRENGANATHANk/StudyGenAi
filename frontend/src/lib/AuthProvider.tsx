@@ -28,21 +28,23 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     (async () => {
       try {
         if (hasBackend()) {
-          // Attempt to restore session via HttpOnly refresh cookie on the backend
+          const refreshToken = localStorage.getItem('refresh_token')
+          // Attempt to restore session via local refresh token
           const res = await fetch(apiUrl('/api/auth/refresh'), {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
+            body: JSON.stringify({ refresh_token: refreshToken || undefined }),
           })
           if (res.ok) {
             const j = await res.json() as Record<string, unknown>
             const result = j?.result as Record<string, unknown> | undefined
             const access = (result?.access_token as string | undefined) || (j?.access_token as string | undefined)
+            const refresh = (result?.refresh_token as string | undefined) || (j?.refresh_token as string | undefined)
             const userData = (result?.user as User | undefined) || (j?.user as User | undefined)
             if (access) {
               localStorage.setItem('access_token', access)
-              // Rotate refresh every 14 minutes
+              if (refresh) localStorage.setItem('refresh_token', refresh)
               _startRefreshInterval()
             }
             setSession(userData || null)
@@ -96,6 +98,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     } catch { /* ignore network errors */ }
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     _stopRefreshInterval()
     await supabase.auth.signOut().catch(() => {})
     setSession(null)
@@ -114,15 +117,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 function _startRefreshInterval() {
   _stopRefreshInterval()
   window.__studygen_refresh_interval = setInterval(() => {
+    const refreshToken = localStorage.getItem('refresh_token')
     fetch(apiUrl('/api/auth/refresh'), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ refresh_token: refreshToken || undefined }),
     }).then(r => r.ok && r.json()).then((j: unknown) => {
-      const result = (j as Record<string, unknown>)?.result as Record<string, unknown> | undefined
-      const access = (result?.access_token as string | undefined) || ((j as Record<string, unknown>)?.access_token as string | undefined)
+      const dict = j as Record<string, unknown>
+      const result = dict?.result as Record<string, unknown> | undefined
+      const access = (result?.access_token as string | undefined) || (dict?.access_token as string | undefined)
+      const refresh = (result?.refresh_token as string | undefined) || (dict?.refresh_token as string | undefined)
       if (access) localStorage.setItem('access_token', access)
+      if (refresh) localStorage.setItem('refresh_token', refresh)
     }).catch(() => {})
   }, 14 * 60 * 1000) as unknown as number
 }

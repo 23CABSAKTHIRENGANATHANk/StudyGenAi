@@ -33,15 +33,20 @@ export default function LoginForm() {
           return;
         }
         const access = j?.access_token || j?.result?.access_token;
+        const refresh = j?.refresh_token || j?.result?.refresh_token;
         if (access) {
           localStorage.setItem('access_token', access);
+          if (refresh) {
+            localStorage.setItem('refresh_token', refresh);
+          }
           if (window.__studygen_refresh_interval) clearInterval(window.__studygen_refresh_interval as number);
           window.__studygen_refresh_interval = setInterval(() => {
+            const currentRefresh = localStorage.getItem('refresh_token');
             fetch(apiUrl('/api/auth/refresh'), {
               method: 'POST',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({}),
+              body: JSON.stringify({ refresh_token: currentRefresh || undefined }),
             });
           }, 14 * 60 * 1000) as unknown as number;
         }
