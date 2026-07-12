@@ -1,0 +1,34 @@
+@echo off
+REM Quick Start Guide for Windows
+
+echo.
+echo ========================================
+echo StudyGen AI - Windows Quick Start
+echo ========================================
+echo.
+echo This project requires two terminal windows:
+echo.
+echo TERMINAL 1 - Backend (FastAPI):
+echo   Run: start-backend.bat
+echo   Or:  cd backend ^& python -m venv venv ^& venv\Scripts\activate ^& pip install -r requirements.txt ^& python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+echo.
+echo TERMINAL 2 - Frontend (Vite):
+echo   Run: start-frontend.bat
+echo   Or:  npm install ^& npm run dev
+echo.
+echo Then open: http://localhost:5173
+echo.
+echo ========================================
+echo.
+echo Optional: Start Supabase Local Stack
+echo   Install: npm install -g supabase
+echo   Start:   supabase start
+echo.
+echo Troubleshooting:
+echo   - Check browser console (F12) for errors
+echo   - Check backend logs for connection issues
+echo   - Verify DATABASE_URL in backend\.env
+echo   - Make sure port 5173 and 8000 are available
+echo.
+
+pause

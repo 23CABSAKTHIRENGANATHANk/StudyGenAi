@@ -1,0 +1,173 @@
+┌─────────────────────────────────────────────────────────────────────┐
+│                   StudyGen AI - Quick Start                          │
+│                      Real-Time Development                           │
+└─────────────────────────────────────────────────────────────────────┘
+
+✅ PROJECT IS READY TO RUN
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ WINDOWS USERS - QUICK START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  OPEN TERMINAL #1 (Backend)
+   
+   Run: start-backend.bat
+   
+   You should see:
+   ✓ INFO:     Started server process [####]
+   ✓ INFO:     Uvicorn running on http://0.0.0.0:8000
+
+2️⃣  OPEN TERMINAL #2 (Frontend)
+   
+   Run: start-frontend.bat
+   
+   You should see:
+   ✓ VITE v... dev server running at:
+   ✓ ➜  Local:   http://localhost:5173/
+
+3️⃣  OPEN BROWSER
+   
+   URL: http://localhost:5173
+   
+   You should see:
+   ✓ StudyGen AI login page OR dashboard (if logged in)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ MAC/LINUX USERS - QUICK START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣  OPEN TERMINAL #1
+   chmod +x start-backend.sh
+   ./start-backend.sh
+
+2️⃣  OPEN TERMINAL #2
+   chmod +x start-frontend.sh
+   ./start-frontend.sh
+
+3️⃣  OPEN BROWSER
+   http://localhost:5173
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ SERVICES & PORTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend (React + Vite)
+  URL:    http://localhost:5173
+  Status: Starts with "start-frontend.*"
+  Hot:    Reloads on file changes ✓
+
+Backend (Python FastAPI)
+  URL:    http://localhost:8000
+  Status: Starts with "start-backend.*"
+  Reload: Auto-reloads on file changes ✓
+
+Database (PostgreSQL via Supabase)
+  URL:    http://localhost:54322
+  Setup:  Optional (uses Supabase local stack)
+  Status: Run "supabase start" if needed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ "Network error loading dashboard"
+
+   ✓ Step 1: Is the backend running?
+   
+     Windows: Check if start-backend.bat window is open and shows
+              "Uvicorn running on http://0.0.0.0:8000"
+     
+     Mac/Linux: Check if backend terminal shows port 8000 listening
+     
+   ✓ Step 2: Test backend health
+   
+     Run in terminal: curl http://localhost:8000/
+     
+     Expected response:
+     {"status":"ok","service":"StudyGen AI Backend","version":"0.1.0"}
+   
+   ✓ Step 3: Click the "Retry" button on the error message
+   
+   ✓ Step 4: Check browser console (F12 → Console tab)
+   
+     Look for: [API] GET /api/dashboard/overview
+     
+     If you see CORS or connection errors, backend is not accessible
+
+❌ "Port 8000 is already in use"
+
+   Windows: 
+   netstat -ano | findstr :8000
+   taskkill /PID <PID> /F
+   
+   Mac/Linux:
+   lsof -i :8000
+   kill -9 <PID>
+
+❌ "Cannot find module 'react'" (Frontend)
+
+   Windows: Run "npm install" in the frontend directory
+   Mac/Linux: Same as above
+
+❌ "ModuleNotFoundError" (Backend)
+
+   Windows: Run "pip install -r requirements.txt" in backend/
+   Mac/Linux: Same as above
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ TESTING THE FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ Dashboard loads
+✓ Click "Upload document" 
+✓ Upload a PDF or document
+✓ See it appear in "Recent Documents"
+✓ Click "Generate summary" to test AI integration
+✓ Check real-time stats updating
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ DEVELOPMENT TIPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Frontend Changes:
+  ✓ Edit any file in src/
+  ✓ Save and the browser auto-refreshes
+  ✓ No rebuild needed!
+
+Backend Changes:
+  ✓ Edit any file in backend/app/
+  ✓ Uvicorn auto-reloads (watch for: Uvicorn reloading)
+  ✓ Refresh browser to see changes
+
+Debug Frontend:
+  ✓ Open browser: F12 or Ctrl+Shift+I
+  ✓ Console tab for logs and errors
+  ✓ Network tab to see API calls
+  ✓ Application tab to check localStorage/auth tokens
+
+Debug Backend:
+  ✓ Check the backend terminal for error logs
+  ✓ Add print() statements for debugging
+  ✓ Or use Python debugger (pdb)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 Full Setup Guide:          SETUP_LOCAL.md
+📖 Project Status:            STATUS.md
+📖 Deployment Instructions:   docs/DEPLOYMENT_PLAN.md
+📖 Windows Quick Start:       QUICKSTART.txt
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ READY TO START? 🚀
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Choose your platform above and follow the steps!
+
+Questions? Check:
+  1. Browser console (F12) for detailed errors
+  2. Backend terminal for server logs
+  3. STATUS.md for troubleshooting guide
+
+Happy developing! 🎓

@@ -28,7 +28,30 @@ export async function apiFetch(input: string, init: ApiOptions = {}): Promise<Re
   // Always include cookies for HttpOnly refresh token support
   if (opts.credentials === undefined) opts.credentials = 'include';
 
-  return fetch(apiUrl(input), opts);
+  const fullUrl = apiUrl(input);
+  
+  // Log API calls in development
+  if (import.meta.env.DEV) {
+    console.log(`[API] ${opts.method || 'GET'} ${fullUrl}`);
+  }
+
+  try {
+    const res = await fetch(fullUrl, opts);
+    
+    // Log response status in development
+    if (import.meta.env.DEV) {
+      console.log(`[API] Response: ${res.status}`);
+    }
+    
+    return res;
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error(`[API] Fetch error: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[API] URL was: ${fullUrl}`);
+      console.error(`[API] Is backend running on http://localhost:8000?`);
+    }
+    throw error;
+  }
 }
 
 /**
