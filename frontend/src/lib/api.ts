@@ -52,4 +52,28 @@ export async function apiJson<T = unknown>(input: string, init: ApiOptions = {})
   }
 }
 
+/** Safe extractor for backend error detail strings. */
+export function getErrorMessage(err: unknown, fallback = 'An unexpected error occurred.'): string {
+  if (!err) return fallback;
+  if (typeof err === 'string') return err;
+  if (typeof err === 'object') {
+    const dict = err as Record<string, unknown>;
+    // If it's a wrapper object containing 'detail'
+    if ('detail' in dict && dict.detail !== undefined) {
+      return getErrorMessage(dict.detail, fallback);
+    }
+    // If it's the raw GoTrue/Supabase error dict with 'msg' or 'message'
+    const msg = dict.msg || dict.message;
+    if (typeof msg === 'string') return msg;
+
+    // Otherwise serialize
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return fallback;
+    }
+  }
+  return String(err);
+}
+
 export default apiFetch;

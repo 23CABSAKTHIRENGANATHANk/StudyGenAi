@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { apiUrl } from '../lib/api';
+import { apiUrl, getErrorMessage } from '../lib/api';
 
 function hasBackend(): boolean {
   return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim() !== '';
@@ -42,7 +42,7 @@ export default function SignupForm() {
         });
         const j = await res.json();
         if (!res.ok) {
-          setError(j.detail || 'Signup failed. Please try again.');
+          setError(getErrorMessage(j, 'Signup failed. Please try again.'));
           return;
         }
       } else {

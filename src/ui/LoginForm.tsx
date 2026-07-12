@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { apiUrl } from '../lib/api';
+import { apiUrl, getErrorMessage } from '../lib/api';
 
 function hasBackend(): boolean {
   return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim() !== '';
@@ -29,7 +29,7 @@ export default function LoginForm() {
         });
         const j = await res.json();
         if (!res.ok) {
-          setError(j.detail || 'Login failed. Check your credentials and try again.');
+          setError(getErrorMessage(j, 'Login failed. Check your credentials and try again.'));
           return;
         }
         const access = j?.access_token || j?.result?.access_token;
