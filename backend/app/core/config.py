@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
 import os
 
@@ -14,6 +14,20 @@ class Settings:
     google_gemini_api_key: str = os.getenv('GOOGLE_GEMINI_API_KEY', '')
     app_origin: str = os.getenv('APP_ORIGIN', 'http://localhost:5173')
     dev_cors_all: bool = os.getenv('DEV_CORS_ALL', 'false').lower() == 'true'
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        """Return all allowed CORS origins from APP_ORIGIN (comma-separated) plus localhost."""
+        base = [o.strip() for o in self.app_origin.split(',') if o.strip()]
+        # Always allow local dev
+        extras = ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173']
+        seen: set[str] = set()
+        result: list[str] = []
+        for o in base + extras:
+            if o not in seen:
+                seen.add(o)
+                result.append(o)
+        return result
     # Modern Gemini models (REST API v1beta)
     gemini_embed_model: str = os.getenv('GEMINI_EMBED_MODEL', 'text-embedding-004')
     gemini_chat_model: str = os.getenv('GEMINI_CHAT_MODEL', 'gemini-2.0-flash')

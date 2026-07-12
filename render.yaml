@@ -19,4 +19,6 @@ services:
       - key: GOOGLE_GEMINI_API_KEY
         sync: false
       - key: APP_ORIGIN
-        value: https://your-vercel-app.vercel.app
+        value: https://study-gen-ai-beta.vercel.app
+      - key: SUPABASE_SECRET_KEY
+        sync: false
