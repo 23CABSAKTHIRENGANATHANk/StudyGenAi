@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { apiUrl } from '../lib/api';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ export default function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/server-login', {
+      const res = await fetch(apiUrl('/api/auth/server-login'), {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -30,7 +31,7 @@ export default function LoginForm() {
         // Kick off background token refresh
         if (window.__studygen_refresh_interval) clearInterval(window.__studygen_refresh_interval as number);
         window.__studygen_refresh_interval = setInterval(() => {
-          fetch('/api/auth/refresh', {
+          fetch(apiUrl('/api/auth/refresh'), {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

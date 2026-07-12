@@ -1,10 +1,16 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
-  ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "https://your-render-backend-url.onrender.com/api/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/((?!assets|favicon\\.ico|robots\\.txt).*)",
+      "destination": "/index.html"
+    }
   ]
 }

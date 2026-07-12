@@ -1,7 +1,12 @@
 import type { ApiResponse } from '../types';
 
 const meta: Record<string, unknown> = import.meta as unknown as Record<string, unknown>;
-const API_BASE: string = (meta.env as Record<string, string> | undefined)?.VITE_API_URL ?? '';
+const API_BASE = ((meta.env as Record<string, string> | undefined)?.VITE_API_URL ?? '').replace(/\/$/, '');
+
+/** Build an API URL for both local proxy and separately deployed backends. */
+export function apiUrl(path: string): string {
+  return path.startsWith('http') ? path : `${API_BASE}${path}`;
+}
 
 type ApiOptions = RequestInit & { auth?: boolean };
 
@@ -23,8 +28,7 @@ export async function apiFetch(input: string, init: ApiOptions = {}): Promise<Re
   // Always include cookies for HttpOnly refresh token support
   if (opts.credentials === undefined) opts.credentials = 'include';
 
-  const url = input.startsWith('http') ? input : `${API_BASE}${input}`;
-  return fetch(url, opts);
+  return fetch(apiUrl(input), opts);
 }
 
 /**
