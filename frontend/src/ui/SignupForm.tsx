@@ -53,11 +53,10 @@ export default function SignupForm() {
           return;
         }
       }
-      // Supabase may require email confirmation
       setSuccess(
-        'Account created! Check your email to confirm your address, then sign in.'
+        'Account created successfully! Redirecting to login...'
       );
-      setTimeout(() => navigate('/auth/login'), 3000);
+      setTimeout(() => navigate('/auth/login'), 2000);
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
