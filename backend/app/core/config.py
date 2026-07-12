@@ -12,8 +12,9 @@ class Settings:
     supabase_anon_key: str = os.getenv('SUPABASE_ANON_KEY', '')
     database_url: str = os.getenv('DATABASE_URL', '')
     google_gemini_api_key: str = os.getenv('GOOGLE_GEMINI_API_KEY', '')
-    app_origin: str = os.getenv('APP_ORIGIN', 'http://localhost:5173')
+    app_origin: str = os.getenv('APP_ORIGIN', 'https://study-gen-ai-beta.vercel.app,http://localhost:5173')
     dev_cors_all: bool = os.getenv('DEV_CORS_ALL', 'false').lower() == 'true'
+    backend_url: str = os.getenv('BACKEND_URL', 'https://studygenai-wt0y.onrender.com')
 
     @property
     def allowed_origins(self) -> list[str]:

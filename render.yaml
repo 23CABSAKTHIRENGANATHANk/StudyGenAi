@@ -20,5 +20,7 @@ services:
         sync: false
       - key: APP_ORIGIN
         value: https://study-gen-ai-beta.vercel.app
+      - key: BACKEND_URL
+        value: https://studygenai-wt0y.onrender.com
       - key: SUPABASE_SECRET_KEY
         sync: false
