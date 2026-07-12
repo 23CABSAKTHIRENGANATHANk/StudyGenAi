@@ -44,35 +44,33 @@ def _upsert_user(user_id: str, email: str) -> None:
 
 @router.post("/signup")
 async def signup(data: AuthRequest):
-    supabase_url = settings.supabase_url or os.getenv('SUPABASE_URL')
-    supabase_key = settings.supabase_service_key or settings.supabase_secret_key or os.getenv('SUPABASE_SERVICE_KEY') or os.getenv('SUPABASE_SECRET_KEY')
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail='Supabase not configured')
+    if not supabase_service.client:
+        raise HTTPException(status_code=500, detail='Supabase client not configured')
     try:
-        url = f"{supabase_url}/auth/v1/signup"
-        headers = {
-            'apikey': supabase_key,
-            'Authorization': f'Bearer {supabase_key}',
-            'Content-Type': 'application/json'
-        }
-        payload = {'email': data.email, 'password': data.password}
-        r = requests.post(url, json=payload, headers=headers, timeout=10)
-        r.raise_for_status()
-        result = r.json()
-        # Sync user to our DB if we got an id back
-        uid = result.get('id') or (result.get('user') or {}).get('id')
+        # Sign up using Supabase Python SDK
+        res = supabase_service.client.auth.sign_up({
+            'email': data.email,
+            'password': data.password
+        })
+        
+        user = getattr(res, 'user', None)
+        uid = user.id if user else None
+        
         if uid:
             _upsert_user(uid, data.email)
-        return {"message": "Signup initiated. Check your email to confirm.", "result": result}
-    except requests.HTTPError:
-        detail = None
-        try:
-            detail = r.json()
-        except Exception:
-            detail = str(r.text)
-        raise HTTPException(status_code=400, detail=detail)
+            
+        # Format a user-friendly response dictionary matching the SDK structure
+        user_dict = {
+            "id": uid,
+            "email": user.email if user else data.email,
+        }
+        return {
+            "message": "Signup initiated. Check your email to confirm if confirmation is enabled.",
+            "result": {"user": user_dict}
+        }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception('signup failed')
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/login")
@@ -87,34 +85,32 @@ async def login(data: AuthRequest):
 @router.post('/server-login')
 async def server_login(data: AuthRequest, response: Response):
     """Exchange credentials server-side with Supabase and set HttpOnly refresh cookie."""
-    supabase_url = settings.supabase_url or os.environ.get('SUPABASE_URL')
-    supabase_key = (
-        settings.supabase_service_key or settings.supabase_secret_key
-        or os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('SUPABASE_SECRET_KEY')
-    )
-    if not supabase_url or not supabase_key:
-        raise HTTPException(status_code=500, detail='Supabase not configured')
+    if not supabase_service.client:
+        raise HTTPException(status_code=500, detail='Supabase client not configured')
     try:
-        url = f"{supabase_url}/auth/v1/token?grant_type=password"
-        headers = {
-            'apikey': supabase_key,
-            'Authorization': f'Bearer {supabase_key}',
-            'Content-Type': 'application/json'
+        # Use Supabase Python SDK to sign in — this handles all headers and token exchange safely
+        res = supabase_service.client.auth.sign_in_with_password({
+            'email': data.email,
+            'password': data.password
+        })
+        
+        session = getattr(res, 'session', None)
+        user = getattr(res, 'user', None)
+        
+        if not session:
+            raise HTTPException(status_code=400, detail="Invalid session returned")
+            
+        access_token = session.access_token
+        refresh_token = session.refresh_token
+        
+        user_data = {
+            "id": user.id if user else None,
+            "email": user.email if user else data.email,
         }
-        payload = {'email': data.email, 'password': data.password}
-        r = requests.post(url, json=payload, headers=headers, timeout=10)
-        r.raise_for_status()
-        data_json = r.json()
-        access_token = data_json.get('access_token')
-        refresh_token = data_json.get('refresh_token')
-
-        # Sync user into our local users table
-        user_data = data_json.get('user', {})
-        uid = user_data.get('id')
-        email = user_data.get('email') or data.email
-        if uid:
-            _upsert_user(uid, email)
-
+        
+        if user and user.id:
+            _upsert_user(user.id, data.email)
+            
         if refresh_token:
             secure_cookie = str(settings.app_origin or '').startswith('https://')
             response.set_cookie(
@@ -126,15 +122,9 @@ async def server_login(data: AuthRequest, response: Response):
                 path='/'
             )
         return {'access_token': access_token, 'refresh_token': refresh_token, 'user': user_data}
-    except requests.HTTPError:
-        logger.exception('server-login HTTPError')
-        try:
-            detail = r.json()
-        except Exception:
-            detail = r.text
-        raise HTTPException(status_code=400, detail=detail)
     except Exception as e:
         logger.exception('server-login failed')
+        # Raise clear HTTP 400 with the exact error details
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -188,19 +178,19 @@ async def refresh_token(req: RefreshRequest, request: Request, response: Respons
     token = req.refresh_token or request.cookies.get('refresh_token')
     if not token:
         raise HTTPException(status_code=400, detail='Missing refresh_token')
+    if not supabase_service.client:
+        raise HTTPException(status_code=500, detail='Supabase client not configured')
     try:
-        url = f"{settings.supabase_url}/auth/v1/token?grant_type=refresh_token"
-        auth_key = settings.supabase_service_key or settings.supabase_secret_key
-        headers = {
-            'apikey': auth_key,
-            'Authorization': f'Bearer {auth_key}',
-            'Content-Type': 'application/json'
-        }
-        payload = {'refresh_token': token}
-        r = requests.post(url, json=payload, headers=headers, timeout=10)
-        r.raise_for_status()
-        data_json = r.json()
-        new_refresh = data_json.get('refresh_token')
+        # Use Supabase Python SDK to refresh the session safely
+        res = supabase_service.client.auth.refresh_session(token)
+        
+        session = getattr(res, 'session', None)
+        if not session:
+            raise HTTPException(status_code=400, detail="Invalid session returned during refresh")
+            
+        new_access = session.access_token
+        new_refresh = session.refresh_token
+        
         if new_refresh:
             secure_cookie = str(settings.app_origin or '').startswith('https://')
             response.set_cookie(
@@ -211,9 +201,12 @@ async def refresh_token(req: RefreshRequest, request: Request, response: Respons
                 max_age=60 * 60 * 24 * 30,
                 path='/'
             )
-        return {'message': 'Refreshed', 'result': data_json}
-    except HTTPException:
-        raise
+        # Return same payload structure
+        return {'message': 'Refreshed', 'result': {
+            'access_token': new_access,
+            'refresh_token': new_refresh,
+            'user': getattr(res, 'user', None)
+        }}
     except Exception as e:
         logger.exception('refresh failed')
         raise HTTPException(status_code=400, detail=str(e))
