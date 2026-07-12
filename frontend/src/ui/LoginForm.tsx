@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 import { apiUrl } from '../lib/api';
+
+function hasBackend(): boolean {
+  const meta: any = import.meta;
+  return ((meta.env?.VITE_API_URL as string | undefined) ?? '').trim() !== '';
+}
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -14,30 +20,39 @@ export default function LoginForm() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/auth/server-login'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const j = await res.json();
-      if (!res.ok) {
-        setError(j.detail || 'Login failed. Check your credentials and try again.');
-        return;
-      }
-      const access = j?.access_token || j?.result?.access_token;
-      if (access) {
-        localStorage.setItem('access_token', access);
-        // Kick off background token refresh
-        if (window.__studygen_refresh_interval) clearInterval(window.__studygen_refresh_interval as number);
-        window.__studygen_refresh_interval = setInterval(() => {
-          fetch(apiUrl('/api/auth/refresh'), {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-          });
-        }, 14 * 60 * 1000) as unknown as number;
+      if (hasBackend()) {
+        // Use the custom backend login endpoint when a backend is configured
+        const res = await fetch(apiUrl('/api/auth/server-login'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const j = await res.json();
+        if (!res.ok) {
+          setError(j.detail || 'Login failed. Check your credentials and try again.');
+          return;
+        }
+        const access = j?.access_token || j?.result?.access_token;
+        if (access) {
+          localStorage.setItem('access_token', access);
+          if (window.__studygen_refresh_interval) clearInterval(window.__studygen_refresh_interval as number);
+          window.__studygen_refresh_interval = setInterval(() => {
+            fetch(apiUrl('/api/auth/refresh'), {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({}),
+            });
+          }, 14 * 60 * 1000) as unknown as number;
+        }
+      } else {
+        // Direct Supabase auth (no backend required)
+        const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+        if (authError) {
+          setError(authError.message || 'Login failed. Check your credentials and try again.');
+          return;
+        }
       }
       navigate('/app');
     } catch {

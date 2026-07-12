@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient';
 import { apiUrl } from '../lib/api';
+
+function hasBackend(): boolean {
+  const meta: any = import.meta;
+  return ((meta.env?.VITE_API_URL as string | undefined) ?? '').trim() !== '';
+}
 
 export default function SignupForm() {
   const [email, setEmail] = useState('');
@@ -27,16 +33,26 @@ export default function SignupForm() {
 
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/auth/signup'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const j = await res.json();
-      if (!res.ok) {
-        setError(j.detail || 'Signup failed. Please try again.');
-        return;
+      if (hasBackend()) {
+        // Use the custom backend signup endpoint when a backend is configured
+        const res = await fetch(apiUrl('/api/auth/signup'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const j = await res.json();
+        if (!res.ok) {
+          setError(j.detail || 'Signup failed. Please try again.');
+          return;
+        }
+      } else {
+        // Direct Supabase auth (no backend required)
+        const { error: authError } = await supabase.auth.signUp({ email, password });
+        if (authError) {
+          setError(authError.message || 'Signup failed. Please try again.');
+          return;
+        }
       }
       // Supabase may require email confirmation
       setSuccess(
