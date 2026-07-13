@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
@@ -88,7 +89,7 @@ async def create_quiz(data: QuizCreate, user: dict = Depends(get_current_user)):
                 """INSERT INTO quizzes (user_id, document_id, title, questions, summary)
                    VALUES (%s, %s, %s, %s, %s)
                    RETURNING id""",
-                (user_id, data.document_id, data.title, data.questions, data.summary)
+                (user_id, data.document_id, data.title, json.dumps(data.questions), data.summary)
             )
             quiz_id = cur.fetchone()[0]
             conn.commit()
@@ -161,7 +162,7 @@ async def submit_quiz_result(data: QuizResultCreate, user: dict = Depends(get_cu
                 """INSERT INTO quiz_results (quiz_id, user_id, score, total, answers)
                    VALUES (%s, %s, %s, %s, %s)
                    RETURNING id""",
-                (data.quiz_id, user_id, data.score, data.total, data.answers)
+                (data.quiz_id, user_id, data.score, data.total, json.dumps(data.answers))
             )
             result_id = cur.fetchone()[0]
             conn.commit()
