@@ -1,0 +1,21 @@
+# Study Guide: Cell Biology & Mitochondria
+
+## Introduction to the Cell
+The cell is the basic structural, functional, and biological unit of all known organisms. Cells are the smallest units of life, often referred to as the "building blocks of life." The study of cells is called cell biology.
+
+Cells consist of cytoplasm enclosed within a membrane, which contains many biomolecules such as proteins and nucleic acids. Most plant and animal cells are only visible under a light microscope, with dimensions between 1 and 100 micrometers.
+
+## Mitochondria: The Powerhouse of the Cell
+Mitochondria are double-membrane-bound organelles found in most eukaryotic organisms. They generate most of the cell's supply of adenosine triphosphate (ATP), which is used as a source of chemical energy. Because of this vital function, mitochondria are commonly described as the "powerhouses of the cell."
+
+### Structure of Mitochondria
+A mitochondrion contains outer and inner membranes composed of phospholipid bilayers and proteins. The two membranes have different properties:
+1. **Outer Membrane:** Encloses the entire organelle and contains large numbers of integral proteins called porins, which allow molecules to pass through.
+2. **Inner Membrane:** Folded into numerous invaginations called cristae, which increase the surface area available for chemical reactions, specifically the Electron Transport Chain.
+3. **Matrix:** The space enclosed by the inner membrane. It contains a highly concentrated mixture of hundreds of enzymes, mitochondrial DNA (mtDNA), and ribosomes.
+
+### Functions of Mitochondria
+* **Energy Production:** The primary role of mitochondria is the production of ATP through aerobic respiration (the Krebs cycle and oxidative phosphorylation).
+* **Calcium Signaling:** Mitochondria help maintain the proper concentration of calcium ions within the cell.
+* **Apoptosis:** Mitochondria play a key role in programmed cell death (apoptosis), releasing Cytochrome C to initiate cell shutdown when damaged.
+* **Heat Generation:** In brown adipose tissue, mitochondria can generate heat directly through a process called non-shivering thermogenesis.

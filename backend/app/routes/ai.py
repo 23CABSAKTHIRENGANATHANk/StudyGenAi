@@ -77,7 +77,7 @@ def _save_generated_content(mode: str, result: str, document_id: str, user_id: s
                                VALUES (%s, %s, %s, %s, %s)""",
                             (str(uuid.uuid4()), user_id, document_id, q, a)
                         )
-                elif mode == "quiz":
+                    parsed_quiz = _parse_quiz_questions(result)
                     cur.execute(
                         """INSERT INTO quizzes (id, user_id, document_id, title, questions)
                            VALUES (%s, %s, %s, %s, %s::jsonb)""",
@@ -86,7 +86,7 @@ def _save_generated_content(mode: str, result: str, document_id: str, user_id: s
                             user_id,
                             document_id,
                             f"Quiz — {document_id[:8]}",
-                            json.dumps([{"raw": result}])
+                            json.dumps(parsed_quiz)
                         )
                     )
             conn.commit()
@@ -116,6 +116,74 @@ def _parse_flashcards(text: str) -> list[tuple[str, str]]:
     if not pairs and text.strip():
         pairs.append(("Generated Flashcards", text[:500]))
     return pairs
+
+
+def _parse_quiz_questions(text: str) -> list[dict]:
+    """Parse raw quiz text into structured question/options/correct JSON format."""
+    # Try parsing as JSON first
+    try:
+        cleaned = text.strip()
+        if cleaned.startswith("```json"):
+            cleaned = cleaned[7:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+        
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, list):
+            validated = []
+            for item in parsed:
+                if isinstance(item, dict) and "text" in item and "options" in item:
+                    opts = [str(o) for o in item["options"]]
+                    correct = str(item.get("correct", ""))
+                    if correct not in opts and opts:
+                        correct = opts[0]
+                    validated.append({
+                        "text": str(item["text"]),
+                        "options": opts,
+                        "correct": correct
+                    })
+            if validated:
+                return validated
+    except Exception:
+        pass
+
+    # Fallback parsing line by line
+    questions = []
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    current_q = None
+    
+    for line in lines:
+        lower_line = line.lower()
+        if any(lower_line.startswith(p) for p in ("q:", "question:", "1.", "2.", "3.", "4.", "5.")):
+            if current_q and len(current_q["options"]) >= 2:
+                questions.append(current_q)
+            parts = line.split(":", 1)
+            q_text = parts[-1].strip() if len(parts) > 1 else line
+            if "." in q_text[:3]:
+                q_text = q_text.split(".", 1)[-1].strip()
+            current_q = {"text": q_text, "options": [], "correct": ""}
+        elif current_q:
+            if lower_line.startswith(("a)", "b)", "c)", "d)", "a.", "b.", "c.", "d.", "a-", "b-", "c-", "d-")):
+                parts = line.split(")", 1) if ")" in line else line.split(".", 1) if "." in line else line.split("-", 1)
+                opt_text = parts[-1].strip()
+                current_q["options"].append(opt_text)
+            elif "correct" in lower_line or "answer" in lower_line:
+                parts = line.split(":", 1)
+                ans_text = parts[-1].strip() if len(parts) > 1 else line
+                current_q["correct"] = ans_text
+
+    if current_q and len(current_q["options"]) >= 2:
+        questions.append(current_q)
+        
+    if not questions:
+        questions.append({
+            "text": "Please review the raw AI quiz result below:",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correct": "Option A"
+        })
+        
+    return questions
 
 
 @router.post("/generate")

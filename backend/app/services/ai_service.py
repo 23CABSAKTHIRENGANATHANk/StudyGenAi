@@ -174,7 +174,7 @@ def generate_chat_response(prompt: str, context: str | None = None, mode: str = 
     system_instructions = {
         "summary": "You are a study assistant. Summarize the provided document context into clear, concise bullet points a student can review quickly.",
         "notes": "You are a study assistant. Create detailed study notes from the provided context, organizing key concepts and definitions.",
-        "quiz": "You are a study assistant. Generate 5 multiple-choice quiz questions based on the provided context. Format each question with 4 options (A-D) and indicate the correct answer.",
+        "quiz": "You are a study assistant. Generate 5 multiple-choice quiz questions based on the provided context. You MUST return ONLY a valid JSON array of objects, where each object has keys: 'text' (the question text), 'options' (a list of 4 string options), and 'correct' (the exact string of the correct option which must be present in the options list). Do not include any other text, headers, or explanations. Do not wrap in markdown code fences.",
         "flashcards": "You are a study assistant. Create 10 flashcard pairs (question and answer) based on the provided context.",
         "chat": "You are a helpful study assistant. Answer the student's question using the provided document context. Be concise and accurate.",
     }
