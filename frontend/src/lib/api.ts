@@ -1,6 +1,7 @@
 import type { ApiResponse } from '../types';
 
 // MUST use import.meta.env.VITE_* directly for Vite's static build-time replacement
+// Trigger automatic Vercel build after setting VITE_API_URL environment variable
 const API_BASE = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/$/, '');
 
 /** Build an API URL for both local proxy and separately deployed backends. */
