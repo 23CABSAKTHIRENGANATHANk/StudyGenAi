@@ -212,7 +212,8 @@ def generate_chat_response(prompt: str, context: str | None = None, mode: str = 
                         return text
         except requests.HTTPError as e:
             err_text = e.response.text if e.response is not None else ""
-            msg = f"HTTP {e.response.status_code if e.response is not None else 'unknown'}: {err_text}"
+            status_code = e.response.status_code if e.response is not None else str(e)
+            msg = f"{status_code}{': ' + err_text if err_text else ''}"
             logger.warning("Gemini chat HTTP error: %s", msg)
             return f"[AI Gemini API Error: {msg}] Your prompt: {prompt}"
         except Exception as e:
