@@ -91,37 +91,60 @@ def generate_embedding(text: str) -> list[float]:
     API reference:
       POST https://generativelanguage.googleapis.com/v1beta/models/{model}:embedContent?key={api_key}
     """
-    api_key = settings.google_gemini_api_key
+    provider = settings.ai_provider
     # Check cache first
     key = hashlib.sha256(text.encode('utf-8')).hexdigest()
     if key in _EMBED_CACHE:
         return _EMBED_CACHE[key]
-    if api_key and api_key not in ('your-google-gemini-key', ''):
-        model = settings.gemini_embed_model  # text-embedding-004
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:embedContent?key={api_key}"
-        )
+
+    # OpenAI Embeddings
+    if provider == "openai" and settings.openai_api_key:
+        url = "https://api.openai.com/v1/embeddings"
+        headers = {
+            "Authorization": f"Bearer {settings.openai_api_key}",
+            "Content-Type": "application/json"
+        }
         payload = {
-            "model": f"models/{model}",
-            "content": {
-                "parts": [{"text": text}]
-            }
+            "model": "text-embedding-3-small",
+            "input": text
         }
         try:
-            # During tests the test harness monkeypatches requests.post. Prefer direct
-            # calls to requests.post when running under pytest or using a test API key
-            if 'pytest' in sys.modules or (isinstance(api_key, str) and api_key.startswith('fake')):
-                resp = requests.post(url, json=payload, timeout=30)
-            else:
-                resp = _request_with_retries('post', url, json=payload, timeout=30)
+            resp = _request_with_retries('post', url, json=payload, headers=headers, timeout=30)
             data = resp.json()
-            values = data.get("embedding", {}).get("values")
+            values = data.get("data", [{}])[0].get("embedding")
             if values and isinstance(values, list):
                 _cache_embedding(key, values)
                 return values
         except Exception as e:
-            logger.warning("Gemini embedding failed after retries, using fallback: %s", e)
+            logger.warning("OpenAI embedding failed, using fallback: %s", e)
+
+    # Gemini Embeddings (Default)
+    else:
+        api_key = settings.google_gemini_api_key
+        if api_key and api_key not in ('your-google-gemini-key', ''):
+            model = settings.gemini_embed_model  # text-embedding-004
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model}:embedContent?key={api_key}"
+            )
+            payload = {
+                "model": f"models/{model}",
+                "content": {
+                    "parts": [{"text": text}]
+                }
+            }
+            try:
+                if 'pytest' in sys.modules or (isinstance(api_key, str) and api_key.startswith('fake')):
+                    resp = requests.post(url, json=payload, timeout=30)
+                else:
+                    resp = _request_with_retries('post', url, json=payload, timeout=30)
+                data = resp.json()
+                values = data.get("embedding", {}).get("values")
+                if values and isinstance(values, list):
+                    _cache_embedding(key, values)
+                    return values
+            except Exception as e:
+                logger.warning("Gemini embedding failed after retries, using fallback: %s", e)
 
     return _pseudo_embedding(text)
 
@@ -142,83 +165,138 @@ def _cache_embedding(key: str, emb: list[float]):
 
 def generate_chat_response(prompt: str, context: str | None = None, mode: str = "chat") -> str:
     """
-    Generate a response using the Gemini REST API (gemini-1.5-flash).
-    Falls back to a simple echo when no API key is set.
-
-    API reference:
-      POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}
+    Generate a response using the configured AI provider (Gemini, Groq, or OpenAI).
+    Falls back to a simple echo/raw context when no API key is set.
     """
-    api_key = settings.google_gemini_api_key
-    if api_key and api_key not in ('your-google-gemini-key', ''):
-        model = settings.gemini_chat_model  # gemini-1.5-flash
-        url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent?key={api_key}"
-        )
+    provider = settings.ai_provider
 
-        # Build system instruction based on mode
-        system_instructions = {
-            "summary": "You are a study assistant. Summarize the provided document context into clear, concise bullet points a student can review quickly.",
-            "notes": "You are a study assistant. Create detailed study notes from the provided context, organizing key concepts and definitions.",
-            "quiz": "You are a study assistant. Generate 5 multiple-choice quiz questions based on the provided context. Format each question with 4 options (A-D) and indicate the correct answer.",
-            "flashcards": "You are a study assistant. Create 10 flashcard pairs (question and answer) based on the provided context.",
-            "chat": "You are a helpful study assistant. Answer the student's question using the provided document context. Be concise and accurate.",
+    # Build system instruction based on mode
+    system_instructions = {
+        "summary": "You are a study assistant. Summarize the provided document context into clear, concise bullet points a student can review quickly.",
+        "notes": "You are a study assistant. Create detailed study notes from the provided context, organizing key concepts and definitions.",
+        "quiz": "You are a study assistant. Generate 5 multiple-choice quiz questions based on the provided context. Format each question with 4 options (A-D) and indicate the correct answer.",
+        "flashcards": "You are a study assistant. Create 10 flashcard pairs (question and answer) based on the provided context.",
+        "chat": "You are a helpful study assistant. Answer the student's question using the provided document context. Be concise and accurate.",
+    }
+    system_text = system_instructions.get(mode, system_instructions["chat"])
+    full_prompt = f"Document context:\n{context}\n\nStudent request: {prompt}" if context else prompt
+
+    # ── Groq Provider ────────────────────────────────────────────────────────
+    if provider == "groq" and settings.groq_api_key:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {settings.groq_api_key}",
+            "Content-Type": "application/json"
         }
-        system_text = system_instructions.get(mode, system_instructions["chat"])
-
-        # Build the full prompt
-        if context:
-            full_prompt = (
-                f"Document context:\n{context}\n\n"
-                f"Student request: {prompt}"
-            )
-        else:
-            full_prompt = prompt
-
         payload = {
-            "system_instruction": {
-                "parts": [{"text": system_text}]
-            },
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": full_prompt}]
-                }
+            "model": "llama3-8b-8192",
+            "messages": [
+                {"role": "system", "content": system_text},
+                {"role": "user", "content": full_prompt}
             ],
-            "generationConfig": {
-                "temperature": 0.4,
-                "maxOutputTokens": 2048,
-            }
+            "temperature": 0.4,
+            "max_tokens": 2048
         }
-
         try:
-            if 'pytest' in sys.modules or (isinstance(api_key, str) and api_key.startswith('fake')):
-                resp = requests.post(url, json=payload, timeout=60)
-            else:
-                resp = _request_with_retries('post', url, json=payload, timeout=60)
+            resp = _request_with_retries('post', url, json=payload, headers=headers, timeout=60)
             data = resp.json()
-            candidates = data.get("candidates", [])
-            if candidates:
-                candidate = candidates[0] if isinstance(candidates, list) else candidates
-                content = candidate.get("content", {}) if isinstance(candidate, dict) else {}
-                if isinstance(content, dict):
-                    parts = content.get("parts", [])
-                    if parts:
-                        for part in parts:
-                            if isinstance(part, dict) and part.get("text"):
-                                return part.get("text", "")
-                    text = content.get("text", "")
-                    if text:
-                        return text
+            content = data.get("choices", [{}])[0].get("message", {}).get("content")
+            if content:
+                return content
         except requests.HTTPError as e:
             err_text = e.response.text if e.response is not None else ""
             status_code = e.response.status_code if e.response is not None else str(e)
             msg = f"{status_code}{': ' + err_text if err_text else ''}"
-            logger.warning("Gemini chat HTTP error: %s", msg)
-            return f"[AI Gemini API Error: {msg}] Your prompt: {prompt}"
+            logger.warning("Groq chat HTTP error: %s", msg)
+            return f"[AI Groq API Error: {msg}] Your prompt: {prompt}"
         except Exception as e:
-            logger.warning("Gemini chat failed after retries, using fallback: %s", e)
-            return f"[AI Gemini API Error: {str(e)}] Your prompt: {prompt}"
+            logger.warning("Groq chat failed: %s", e)
+            return f"[AI Groq API Error: {str(e)}] Your prompt: {prompt}"
+
+    # ── OpenAI Provider ──────────────────────────────────────────────────────
+    elif provider == "openai" and settings.openai_api_key:
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {settings.openai_api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": system_text},
+                {"role": "user", "content": full_prompt}
+            ],
+            "temperature": 0.4,
+            "max_tokens": 2048
+        }
+        try:
+            resp = _request_with_retries('post', url, json=payload, headers=headers, timeout=60)
+            data = resp.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content")
+            if content:
+                return content
+        except requests.HTTPError as e:
+            err_text = e.response.text if e.response is not None else ""
+            status_code = e.response.status_code if e.response is not None else str(e)
+            msg = f"{status_code}{': ' + err_text if err_text else ''}"
+            logger.warning("OpenAI chat HTTP error: %s", msg)
+            return f"[AI OpenAI API Error: {msg}] Your prompt: {prompt}"
+        except Exception as e:
+            logger.warning("OpenAI chat failed: %s", e)
+            return f"[AI OpenAI API Error: {str(e)}] Your prompt: {prompt}"
+
+    # ── Gemini Provider (Default) ──────────────────────────────────────────
+    else:
+        api_key = settings.google_gemini_api_key
+        if api_key and api_key not in ('your-google-gemini-key', ''):
+            model = settings.gemini_chat_model  # gemini-1.5-flash
+            url = (
+                f"https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{model}:generateContent?key={api_key}"
+            )
+            payload = {
+                "system_instruction": {
+                    "parts": [{"text": system_text}]
+                },
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": full_prompt}]
+                    }
+                ],
+                "generationConfig": {
+                    "temperature": 0.4,
+                    "maxOutputTokens": 2048,
+                }
+            }
+            try:
+                if 'pytest' in sys.modules or (isinstance(api_key, str) and api_key.startswith('fake')):
+                    resp = requests.post(url, json=payload, timeout=60)
+                else:
+                    resp = _request_with_retries('post', url, json=payload, timeout=60)
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    candidate = candidates[0] if isinstance(candidates, list) else candidates
+                    content = candidate.get("content", {}) if isinstance(candidate, dict) else {}
+                    if isinstance(content, dict):
+                        parts = content.get("parts", [])
+                        if parts:
+                            for part in parts:
+                                if isinstance(part, dict) and part.get("text"):
+                                    return part.get("text", "")
+                        text = content.get("text", "")
+                        if text:
+                            return text
+            except requests.HTTPError as e:
+                err_text = e.response.text if e.response is not None else ""
+                status_code = e.response.status_code if e.response is not None else str(e)
+                msg = f"{status_code}{': ' + err_text if err_text else ''}"
+                logger.warning("Gemini chat HTTP error: %s", msg)
+                return f"[AI Gemini API Error: {msg}] Your prompt: {prompt}"
+            except Exception as e:
+                logger.warning("Gemini chat failed after retries, using fallback: %s", e)
+                return f"[AI Gemini API Error: {str(e)}] Your prompt: {prompt}"
 
     # Fallback: simple echo
     if context:
