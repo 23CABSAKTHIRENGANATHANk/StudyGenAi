@@ -50,23 +50,41 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [retryCount, setRetryCount] = useState(0);
+
+  const fetchDashboard = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiJson<DashboardData>('/api/dashboard/overview');
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('Your session has expired. Please log in again.');
+        } else if (res.status === 503) {
+          setError('Backend service is unavailable. Please try again later.');
+        } else {
+          setError(`Failed to load dashboard data (Error: ${res.status}). Please try again.`);
+        }
+      } else {
+        setData(res.data);
+        setError('');
+      }
+    } catch (err) {
+      const base = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim()) || 'the backend';
+      setError(`Network error loading dashboard. Make sure ${base} is reachable.`);
+      console.error('Dashboard fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await apiJson<DashboardData>('/api/dashboard/overview');
-        if (!res.ok) {
-          setError('Failed to load dashboard data.');
-        } else {
-          setData(res.data);
-        }
-      } catch {
-        setError('Network error loading dashboard.');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    fetchDashboard();
+  }, [retryCount]);
+
+  const handleRetry = () => {
+    setRetryCount(c => c + 1);
+  };
 
   const usage = data?.usage;
   const usageItems = [
@@ -96,8 +114,15 @@ export default function DashboardPage() {
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
-          {error}
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 space-y-3">
+          <p className="text-sm text-red-300">{error}</p>
+          <button
+            onClick={handleRetry}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 disabled:bg-red-500/10 disabled:opacity-50 px-3 py-2 text-sm font-semibold text-red-200 transition"
+          >
+            {loading ? 'Retrying...' : 'Retry'}
+          </button>
         </div>
       )}
 

@@ -4,7 +4,9 @@ import { supabase } from '../lib/supabaseClient';
 import { apiUrl, getErrorMessage } from '../lib/api';
 
 function hasBackend(): boolean {
-  return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim() !== '';
+  // import.meta.env may not be typed in some TS configs, cast to any to avoid "Property 'env' does not exist on type 'ImportMeta'".
+  const viteEnv = (import.meta as any).env as { VITE_API_URL?: string } | undefined;
+  return ((viteEnv?.VITE_API_URL ?? '') as string).trim() !== '';
 }
 
 export default function LoginForm() {
