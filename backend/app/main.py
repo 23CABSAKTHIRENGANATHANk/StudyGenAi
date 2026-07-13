@@ -68,42 +68,63 @@ async def debug_db():
     import traceback
     try:
         from .db import get_connection
+        from .services.supabase_service import supabase_service
+        from pypdf import PdfReader
+        import io
+        
         with get_connection() as conn:
             with conn.cursor() as cur:
-                # Get overall stats
-                cur.execute("SELECT COUNT(*) FROM documents")
-                total_docs = cur.fetchone()[0]
-                cur.execute("SELECT COUNT(*) FROM document_chunks")
-                total_chunks = cur.fetchone()[0]
-                
-                # Get details of recent documents
+                # Get the most recent document
                 cur.execute("""
-                    SELECT id, name, size_bytes, preview_text, created_at 
+                    SELECT id, name, storage_path, user_id
                     FROM documents 
                     ORDER BY created_at DESC 
-                    LIMIT 10
+                    LIMIT 1
                 """)
-                rows = cur.fetchall()
-                recent_docs = []
-                for r in rows:
-                    doc_id, name, size, preview, created = r
-                    cur.execute("SELECT COUNT(*) FROM document_chunks WHERE document_id = %s", (doc_id,))
-                    chunk_count = cur.fetchone()[0]
-                    recent_docs.append({
-                        "id": doc_id,
-                        "name": name,
-                        "size_bytes": size,
-                        "chunk_count": chunk_count,
-                        "preview_length": len(preview) if preview else 0,
-                        "preview_snippet": preview[:200] if preview else "",
-                        "created_at": str(created)
-                    })
-        return {
-            "status": "success",
-            "total_documents": total_docs,
-            "total_chunks": total_chunks,
-            "recent_documents": recent_docs
-        }
+                row = cur.fetchone()
+                if not row:
+                    return {"status": "success", "message": "No documents uploaded yet"}
+                
+                doc_id, name, storage_path, user_id = row
+                
+                # Strip the bucket prefix if needed
+                path_in_bucket = storage_path
+                prefix = 'documents/'
+                if path_in_bucket.startswith(prefix):
+                    path_in_bucket = path_in_bucket[len(prefix):]
+                
+                # Download from Supabase Storage
+                try:
+                    # Retrieve file content bytes
+                    # Using supabase storage download
+                    bucket = supabase_service.client.storage.from_('documents')
+                    file_bytes = bucket.download(path_in_bucket)
+                    
+                    # Test pypdf extraction
+                    reader = PdfReader(io.BytesIO(file_bytes))
+                    pages_info = []
+                    for idx, page in enumerate(reader.pages[:5]):
+                        text = page.extract_text() or ""
+                        pages_info.append({
+                            "page": idx + 1,
+                            "char_count": len(text),
+                            "snippet": repr(text[:100])
+                        })
+                    
+                    return {
+                        "status": "success",
+                        "doc_name": name,
+                        "doc_id": doc_id,
+                        "file_size_downloaded": len(file_bytes),
+                        "total_pages": len(reader.pages),
+                        "pages_diagnostic": pages_info
+                    }
+                except Exception as dl_err:
+                    return {
+                        "status": "error",
+                        "message": f"Failed to download/parse file: {dl_err}",
+                        "traceback": traceback.format_exc()
+                    }
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 
