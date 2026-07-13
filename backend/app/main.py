@@ -87,18 +87,10 @@ async def debug_db():
                 
                 doc_id, name, storage_path, user_id = row
                 
-                # Strip the bucket prefix if needed
-                path_in_bucket = storage_path
-                prefix = 'documents/'
-                if path_in_bucket.startswith(prefix):
-                    path_in_bucket = path_in_bucket[len(prefix):]
-                
                 # Download from Supabase Storage
                 try:
-                    # Retrieve file content bytes
-                    # Using supabase storage download
                     bucket = supabase_service.client.storage.from_('documents')
-                    file_bytes = bucket.download(path_in_bucket)
+                    file_bytes = bucket.download(storage_path)
                     
                     # Test pypdf extraction
                     reader = PdfReader(io.BytesIO(file_bytes))
