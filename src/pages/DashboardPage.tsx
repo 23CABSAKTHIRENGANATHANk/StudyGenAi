@@ -70,7 +70,8 @@ export default function DashboardPage() {
         setError('');
       }
     } catch (err) {
-      setError('Network error loading dashboard. Make sure the backend is running on http://localhost:8000');
+      const base = (((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim()) || 'the backend';
+      setError(`Network error loading dashboard. Make sure ${base} is reachable.`);
       console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);

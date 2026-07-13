@@ -48,7 +48,8 @@ export async function apiFetch(input: string, init: ApiOptions = {}): Promise<Re
     if (import.meta.env.DEV) {
       console.error(`[API] Fetch error: ${error instanceof Error ? error.message : String(error)}`);
       console.error(`[API] URL was: ${fullUrl}`);
-      console.error(`[API] Is backend running on http://localhost:8000?`);
+      const configured = API_BASE || '(using Vite dev proxy)';
+      console.error(`[API] Is backend reachable at ${configured}? If deployed, set VITE_API_URL to your backend host.`);
     }
     throw error;
   }
