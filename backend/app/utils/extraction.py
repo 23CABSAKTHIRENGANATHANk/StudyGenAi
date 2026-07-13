@@ -1,7 +1,7 @@
 import io
 from typing import List
 
-import pdfplumber
+from pypdf import PdfReader
 from docx import Document as DocxDocument
 from pptx import Presentation
 
@@ -10,9 +10,9 @@ def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
     lower = filename.lower()
     if lower.endswith('.pdf'):
         text = []
-        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-            for page in pdf.pages:
-                text.append(page.extract_text() or '')
+        reader = PdfReader(io.BytesIO(file_bytes))
+        for page in reader.pages:
+            text.append(page.extract_text() or '')
         return '\n'.join(text)
     if lower.endswith('.docx'):
         doc = DocxDocument(io.BytesIO(file_bytes))
