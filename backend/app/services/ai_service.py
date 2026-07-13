@@ -210,8 +210,14 @@ def generate_chat_response(prompt: str, context: str | None = None, mode: str = 
                     text = content.get("text", "")
                     if text:
                         return text
+        except requests.HTTPError as e:
+            err_text = e.response.text if e.response is not None else ""
+            msg = f"HTTP {e.response.status_code if e.response is not None else 'unknown'}: {err_text}"
+            logger.warning("Gemini chat HTTP error: %s", msg)
+            return f"[AI Gemini API Error: {msg}] Your prompt: {prompt}"
         except Exception as e:
             logger.warning("Gemini chat failed after retries, using fallback: %s", e)
+            return f"[AI Gemini API Error: {str(e)}] Your prompt: {prompt}"
 
     # Fallback: simple echo
     if context:
