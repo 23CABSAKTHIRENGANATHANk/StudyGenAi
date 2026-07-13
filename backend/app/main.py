@@ -68,55 +68,40 @@ async def debug_db():
     import traceback
     try:
         from .db import get_connection
-        from .services.supabase_service import supabase_service
-        from pypdf import PdfReader
-        import io
-        
         with get_connection() as conn:
             with conn.cursor() as cur:
-                # Get the most recent document
+                # Get overall stats
+                cur.execute("SELECT COUNT(*) FROM documents")
+                total_docs = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM document_chunks")
+                total_chunks = cur.fetchone()[0]
+                
+                # Get details of recent documents
                 cur.execute("""
-                    SELECT id, name, storage_path, user_id
+                    SELECT id, name, size_bytes, created_at 
                     FROM documents 
                     ORDER BY created_at DESC 
-                    LIMIT 1
+                    LIMIT 5
                 """)
-                row = cur.fetchone()
-                if not row:
-                    return {"status": "success", "message": "No documents uploaded yet"}
-                
-                doc_id, name, storage_path, user_id = row
-                
-                # Download from Supabase Storage
-                try:
-                    bucket = supabase_service.client.storage.from_('documents')
-                    file_bytes = bucket.download(storage_path)
-                    
-                    # Test pypdf extraction
-                    reader = PdfReader(io.BytesIO(file_bytes))
-                    pages_info = []
-                    for idx, page in enumerate(reader.pages[:5]):
-                        text = page.extract_text() or ""
-                        pages_info.append({
-                            "page": idx + 1,
-                            "char_count": len(text),
-                            "snippet": repr(text[:100])
-                        })
-                    
-                    return {
-                        "status": "success",
-                        "doc_name": name,
-                        "doc_id": doc_id,
-                        "file_size_downloaded": len(file_bytes),
-                        "total_pages": len(reader.pages),
-                        "pages_diagnostic": pages_info
-                    }
-                except Exception as dl_err:
-                    return {
-                        "status": "error",
-                        "message": f"Failed to download/parse file: {dl_err}",
-                        "traceback": traceback.format_exc()
-                    }
+                rows = cur.fetchall()
+                recent_docs = []
+                for r in rows:
+                    doc_id, name, size, created = r
+                    cur.execute("SELECT COUNT(*) FROM document_chunks WHERE document_id = %s", (doc_id,))
+                    chunk_count = cur.fetchone()[0]
+                    recent_docs.append({
+                        "id": doc_id,
+                        "name": name,
+                        "size_bytes": size,
+                        "chunk_count": chunk_count,
+                        "created_at": str(created)
+                    })
+        return {
+            "status": "success",
+            "total_documents": total_docs,
+            "total_chunks": total_chunks,
+            "recent_documents": recent_docs
+        }
     except Exception as e:
         return {"status": "error", "error": str(e), "traceback": traceback.format_exc()}
 

@@ -74,6 +74,19 @@ async def upload_document(
     # Extract plain text from the file
     text = extract_text_from_bytes(content, file.filename or '')
 
+    # Check if we got any extractable text chunks
+    chunks = chunk_text(text)
+    if not chunks:
+        # Clean up the raw file from Supabase storage
+        try:
+            supabase_service.client.storage.from_('documents').remove([storage_path])
+        except Exception:
+            pass
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded PDF appears to be scanned or contains only images. Please upload a document with selectable text, or upload a .txt or .docx file."
+        )
+
     with get_connection() as conn:
         with conn.cursor() as cur:
             # Insert document record
@@ -86,7 +99,6 @@ async def upload_document(
             )
 
             # Chunk and embed in a single transaction
-            chunks = chunk_text(text)
             for idx, chunk in enumerate(chunks):
                 chunk_id = str(uuid.uuid4())
                 cur.execute(
