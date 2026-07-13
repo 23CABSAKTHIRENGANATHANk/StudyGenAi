@@ -189,7 +189,7 @@ def generate_chat_response(prompt: str, context: str | None = None, mode: str = 
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "llama3-8b-8192",
+            "model": settings.groq_chat_model,
             "messages": [
                 {"role": "system", "content": system_text},
                 {"role": "user", "content": full_prompt}
@@ -221,7 +221,7 @@ def generate_chat_response(prompt: str, context: str | None = None, mode: str = 
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "gpt-4o-mini",
+            "model": settings.openai_chat_model,
             "messages": [
                 {"role": "system", "content": system_text},
                 {"role": "user", "content": full_prompt}

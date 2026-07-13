@@ -35,6 +35,8 @@ class Settings:
     # Modern Gemini models (REST API v1beta)
     gemini_embed_model: str = os.getenv('GEMINI_EMBED_MODEL', 'text-embedding-004')
     gemini_chat_model: str = os.getenv('GEMINI_CHAT_MODEL', 'gemini-2.0-flash')
+    groq_chat_model: str = os.getenv('GROQ_CHAT_MODEL', 'llama-3.3-70b-versatile')
+    openai_chat_model: str = os.getenv('OPENAI_CHAT_MODEL', 'gpt-4o-mini')
     # Storage access strategy: if true, created buckets will be public and
     # `get_file_url` will return a public URL. Otherwise signed URLs are preferred.
     make_storage_public: bool = os.getenv('MAKE_STORAGE_PUBLIC', 'false').lower() == 'true'
