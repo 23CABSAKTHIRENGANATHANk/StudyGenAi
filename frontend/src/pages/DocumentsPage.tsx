@@ -81,7 +81,7 @@ function AIModal({ doc, onClose }: AIModalProps) {
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative w-full max-w-2xl rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl">
+      <div className="relative w-full max-w-2xl rounded-[32px] border border-white/10 bg-slate-900 p-6 sm:p-8 shadow-2xl">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -103,15 +103,15 @@ function AIModal({ doc, onClose }: AIModalProps) {
             <button
               key={value}
               onClick={() => setMode(value)}
-              className={`flex flex-col items-center gap-2 rounded-2xl border p-4 text-center text-sm transition ${
+              className={`flex flex-col items-center gap-1.5 sm:gap-2 rounded-2xl border p-3 sm:p-4 text-center text-sm transition ${
                 mode === value
                   ? 'border-violet-400/50 bg-violet-500/10 text-white'
                   : 'border-white/10 text-slate-400 hover:border-white/20 hover:bg-white/5 hover:text-slate-200'
               }`}
             >
-              <Icon className="h-5 w-5" />
-              <span className="font-medium">{label}</span>
-              <span className="text-xs text-slate-500">{desc}</span>
+              <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="font-medium text-xs sm:text-sm">{label}</span>
+              <span className="hidden sm:block text-xs text-slate-500">{desc}</span>
             </button>
           ))}
         </div>

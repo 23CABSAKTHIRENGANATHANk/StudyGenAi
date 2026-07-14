@@ -98,9 +98,9 @@ export default function ChatPage() {
   const selectedDoc = documents.find(d => d.id === selectedDocId);
 
   return (
-    <div className="flex h-[calc(100vh-140px)] gap-6">
-      {/* Document Sidebar Selector */}
-      <div className="w-80 rounded-[28px] border border-white/10 bg-slate-950/70 p-6 flex flex-col backdrop-blur-md">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-200px)] md:h-[calc(100vh-140px)] gap-4 md:gap-6">
+      {/* Document Sidebar Selector (Desktop Only) */}
+      <div className="hidden md:flex w-80 rounded-[28px] border border-white/10 bg-slate-950/70 p-6 flex-col backdrop-blur-md">
         <h2 className="text-lg font-semibold text-white flex items-center gap-2">
           <FileText className="h-5 w-5 text-violet-400" />
           Active Source
@@ -145,30 +145,54 @@ export default function ChatPage() {
       {/* Main Chat Interface */}
       <div className="flex-1 rounded-[28px] border border-white/10 bg-slate-950/70 flex flex-col backdrop-blur-md overflow-hidden">
         {/* Header */}
-        <div className="px-8 py-5 border-b border-white/10 flex items-center justify-between bg-slate-900/20">
-          <div>
-            <h1 className="text-lg font-semibold text-white flex items-center gap-2">
+        <div className="px-5 py-4 sm:px-8 sm:py-5 border-b border-white/10 flex items-center justify-between bg-slate-900/20 gap-2">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
               Chat with Source
               {selectedDoc && (
-                <span className="text-xs bg-violet-500/20 text-violet-300 px-3 py-1 rounded-full font-normal">
+                <span className="text-[10px] sm:text-xs bg-violet-500/20 text-violet-300 px-2.5 py-0.5 rounded-full font-normal shrink-0">
                   Active
                 </span>
               )}
             </h1>
-            <p className="text-xs text-slate-400 mt-0.5 truncate max-w-lg">
+            <p className="hidden sm:block text-xs text-slate-400 mt-0.5 truncate max-w-lg">
               {selectedDoc ? `Reading: ${selectedDoc.name}` : 'No active document selected.'}
             </p>
           </div>
-          <Sparkles className="h-5 w-5 text-violet-400 animate-pulse" />
+
+          {/* Mobile Source Selector Dropdown */}
+          <div className="md:hidden shrink-0 max-w-[140px] sm:max-w-[200px]">
+            <select
+              value={selectedDocId}
+              onChange={(e) => {
+                setSelectedDocId(e.target.value);
+                setMessages([]);
+              }}
+              aria-label="Select source document"
+              className="w-full truncate rounded-xl border border-white/10 bg-slate-950 px-2.5 py-1.5 text-xs text-slate-300 outline-none focus:border-violet-400"
+            >
+              {documents.length === 0 ? (
+                <option value="">No documents</option>
+              ) : (
+                documents.map((doc) => (
+                  <option key={doc.id} value={doc.id}>
+                    {doc.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
+
+          <Sparkles className="hidden sm:block h-5 w-5 text-violet-400 animate-pulse shrink-0" />
         </div>
 
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto p-8 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-4 sm:space-y-6">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-6">
               <Bot className="h-12 w-12 text-violet-400 mb-4" />
-              <h3 className="text-lg font-semibold text-white">Ask your document anything</h3>
-              <p className="text-sm text-slate-400 mt-2 max-w-sm">
+              <h3 className="text-base sm:text-lg font-semibold text-white">Ask your document anything</h3>
+              <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-sm">
                 Get instant explanations, definitions, summaries, or conceptual breakdowns directly from your source material.
               </p>
             </div>
@@ -176,22 +200,22 @@ export default function ChatPage() {
             messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-4 max-w-3xl ${
+                className={`flex gap-3 sm:gap-4 max-w-3xl ${
                   msg.sender === 'user' ? 'ml-auto flex-row-reverse' : ''
                 }`}
               >
                 <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${
+                  className={`flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border ${
                     msg.sender === 'user'
                       ? 'border-violet-500/30 bg-violet-500/10 text-violet-400'
                       : 'border-white/10 bg-slate-900 text-slate-300'
                   }`}
                 >
-                  {msg.sender === 'user' ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+                  {msg.sender === 'user' ? <User className="h-4 w-4 sm:h-5 sm:w-5" /> : <Bot className="h-4 w-4 sm:h-5 sm:w-5" />}
                 </div>
 
                 <div
-                  className={`rounded-2xl px-5 py-3.5 text-sm leading-relaxed border ${
+                  className={`rounded-2xl px-4 py-2.5 sm:px-5 sm:py-3.5 text-xs sm:text-sm leading-relaxed border ${
                     msg.sender === 'user'
                       ? 'bg-violet-600 border-violet-500 text-white rounded-tr-none'
                       : 'bg-slate-900/60 border-white/5 text-slate-200 rounded-tl-none'
@@ -204,12 +228,12 @@ export default function ChatPage() {
           )}
 
           {sendingMessage && (
-            <div className="flex gap-4 max-w-3xl">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-900 text-slate-300">
-                <Bot className="h-5 w-5" />
+            <div className="flex gap-3 sm:gap-4 max-w-3xl">
+              <div className="flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl border border-white/10 bg-slate-900 text-slate-300">
+                <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
-              <div className="rounded-2xl px-5 py-3.5 text-sm bg-slate-900/60 border border-white/5 text-slate-400 rounded-tl-none flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
+              <div className="rounded-2xl px-4 py-2.5 sm:px-5 sm:py-3.5 text-xs sm:text-sm bg-slate-900/60 border border-white/5 text-slate-400 rounded-tl-none flex items-center gap-2">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
                 <span>AI is reading and thinking...</span>
               </div>
             </div>
@@ -218,7 +242,7 @@ export default function ChatPage() {
         </div>
 
         {/* Input box */}
-        <div className="p-6 border-t border-white/10 bg-slate-900/20">
+        <div className="p-4 sm:p-6 border-t border-white/10 bg-slate-900/20">
           <form onSubmit={handleSend} className="relative">
             <input
               type="text"
@@ -227,17 +251,17 @@ export default function ChatPage() {
               disabled={!selectedDocId || sendingMessage}
               placeholder={
                 selectedDocId
-                  ? "Ask a question about this document..."
-                  : "Upload or select a document on the left sidebar to start chatting"
+                  ? "Ask a question..."
+                  : "Upload/select a document to start"
               }
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-5 py-4 pr-14 text-sm text-white placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 sm:px-5 sm:py-4 pr-12 sm:pr-14 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={!inputText.trim() || !selectedDocId || sendingMessage}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:bg-slate-800 text-white transition disabled:opacity-40"
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-violet-600 hover:bg-violet-500 disabled:bg-slate-800 text-white transition disabled:opacity-40"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </button>
           </form>
         </div>
