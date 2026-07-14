@@ -29,6 +29,29 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> Optional[di
         user = _extract_user_dict(user_obj)
         if not user:
             raise HTTPException(status_code=401, detail='Could not resolve user')
+        
+        # JIT sync/upsert user in database to prevent foreign key errors on subsequent queries
+        uid = user.get('id') or user.get('sub')
+        email = user.get('email')
+        if uid and email:
+            try:
+                from .db import get_connection
+                conn = get_connection()
+                try:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """INSERT INTO users (id, email)
+                               VALUES (%s, %s)
+                               ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, updated_at = now()""",
+                            (str(uid), str(email))
+                        )
+                    conn.commit()
+                finally:
+                    conn.close()
+            except Exception as db_err:
+                import logging
+                logging.getLogger(__name__).warning("JIT user upsert failed: %s", db_err)
+
         return user
     except HTTPException:
         raise

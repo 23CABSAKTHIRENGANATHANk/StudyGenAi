@@ -16,7 +16,7 @@ export function useAuth() {
 
 /** Whether a deployed backend API URL is configured */
 function hasBackend(): boolean {
-  return ((import.meta.env.VITE_API_URL as string | undefined) ?? '').trim() !== ''
+  return true;
 }
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -76,10 +76,16 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     })()
 
     // Keep in sync with Supabase client-side auth state changes (OAuth, magic links)
-    const { data } = supabase.auth.onAuthStateChange((_event: string, newSession: { user?: User | null } | null) => {
-      const supaUser = newSession?.user as unknown as User | undefined
+    const { data } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+      const supaUser = session?.user as unknown as User | undefined
       setSession(supaUser || null)
       setUser(supaUser || null)
+      if (session?.access_token) {
+        localStorage.setItem('access_token', session.access_token)
+      }
+      if (session?.refresh_token) {
+        localStorage.setItem('refresh_token', session.refresh_token)
+      }
     })
     const subscription = data?.subscription
     return () => {
