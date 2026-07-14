@@ -52,7 +52,7 @@ function NoteModal({ note, onClose, onSaved }: NoteModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-xl rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl">
+      <div className="relative w-full max-w-xl rounded-[32px] border border-white/10 bg-slate-900 p-6 sm:p-8 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-slate-500">{isEdit ? 'Edit Note' : 'New Note'}</p>
